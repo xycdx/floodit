@@ -161,42 +161,5 @@ void test(int n, int k) {
 
 
 int main() {
-    test(0, 0);
-    cout<<test_time[0][0]<<endl;
-    // for(int i = 15; i <= 20; i++) {
-    //     for(int j = 2; j <= min(6, i * i); j++) {
-    //         generate(i, j);
-    //         test(i, j);
-    //     }
-    // }
-
-    // for(int i = 15; i <= 20; i++) {
-    //     for(int j = 2; j <= min(6, i * i); j++) {
-    //         cout<<test_rate[i][j]<<" ";
-    //     }
-    //     cout<<endl;
-    // }
-    // cout<<endl;
-    // for(int i = 15; i <= 20; i++) {
-    //     for(int j = 2; j <= min(6, i * i); j++) {
-    //         cout<<test_time[i][j]<<" ";
-    //     }
-    //     cout<<endl;
-    // }
-    // cout<<endl;
-    // for(int i = 15; i <= 20; i++) {
-    //     for(int j = 2; j <= min(6, i * i); j++) {
-    //         cout<<test_state[i][j]<<" ";
-    //     }
-    //     cout<<endl;
-    // }
-    // cout<<endl;
-    // for(int i = 15; i <= 20; i++) {
-    //     for(int j = 2; j <= min(6, i * i); j++) {
-    //         cout<<test_state_time[i][j]<<" ";
-    //     }
-    //     cout<<endl;
-    // }
-    // cout<<endl;
-    // return 0;
+    test(0, 0); // run 99problems test
 }
