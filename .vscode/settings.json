@@ -20,6 +20,8 @@
         "xloctime": "cpp",
         "thread": "cpp",
         "string": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "stack": "cpp",
+        "functional": "cpp"
     }
 }

@@ -7,9 +7,9 @@
 #include <functional>
 #include <atomic>
 #include <tuple>
+#include <stack>
 
 #include <graph.h>
-#include <tarjan.h>
 
 using namespace std;
 
@@ -45,6 +45,21 @@ struct State {
     int colorNumber;
     vector<color_t> moves;
     vector<bool> isFilled;
+};
+
+struct Tarjan {
+    struct edge {
+        int u, v;
+    };
+    vector<edge> edges;
+    vector<vector<int>> g;
+    vector<int> dfn, low, is_bridge, id;
+    stack<int> stk;
+    int n, dcc_cnt, timestamp;
+
+    void tarjan(State &state, Graph &graph);
+
+    void tarjan_(int u, int from);
 };
 
 

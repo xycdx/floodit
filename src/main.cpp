@@ -159,7 +159,34 @@ void test(int n, int k) {
     test_state_time[n][k] = (successCount == 0 ? -1 : totalDuration / stateCount);
 }
 
+void test_one_case(string testcase) {
+    stateCount = 0;
+    successCount = 0;
+    totalDuration = 0.0;
+    cout << "testcase: " << testcase << endl;
+    ifstream file("../test/" + testcase);
+    if (file.is_open()) {
+        int row, col, color;
+        file >> row >> col >> color;
+        vector<vector<int>> data(row, vector<int>(col, 0));
+        for(int i = 0; i < row; i++) {
+            for(int j = 0; j < col; j++) {
+                file >> data[i][j];
+            }
+        }
+
+        stopTimer = false;
+        timeoutOccurred = false;
+        run_testcase(1, row, col, data);
+
+        file.close();
+    } else {
+        cout << "no such file" << endl;
+    }
+}
+
 
 int main() {
-    test(0, 0); // run 99problems test
+    // test(0, 0); // run 99problems test
+
 }

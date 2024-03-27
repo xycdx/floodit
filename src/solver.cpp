@@ -228,8 +228,222 @@ void State::calculate_1(Graph& graph) {
 	heuristicValue = minMovesLeft;
 }
 
-void calculate_3(Graph& graph) {
+void Tarjan::tarjan(State &state, Graph &graph) {
+    n = graph.nodeCount;
+    dcc_cnt = 0;
+    timestamp = 0;
+    map<pair<int, int>, bool> isEdgeVisited;
+    for(int i = 0; i < state.isFilled.size(); i++) {
+        if(!state.isFilled[i]) {
+            for(int v : graph.g[i]) {
+                if(state.isFilled[v] && !isEdgeVisited[{i, graph.startNode}] && !isEdgeVisited[{graph.startNode, i}]) {
+                    edges.push_back({i, graph.startNode});
+                    edges.push_back({graph.startNode, i});
+                    isEdgeVisited[{i, graph.startNode}] = isEdgeVisited[{graph.startNode, i}] = true;
+                } 
+                if(!state.isFilled[v] && !isEdgeVisited[{i, v}] && !isEdgeVisited[{v, i}]) {
+                    edges.push_back({i, v});
+                    edges.push_back({v, i});
+                    isEdgeVisited[{i, v}] = isEdgeVisited[{v, i}] = true;
+                }
+            }
+        }
+    }
+    g.resize(n);
+    dfn.resize(n, 0);
+    low.resize(n, 0);
+    is_bridge.resize(edges.size(), 0);
+    id.resize(n, 0);
+    for(int i = 0; i < edges.size(); i+=2) {
+        g[edges[i].u].push_back(i);
+        g[edges[i].v].push_back(i + 1);
+    }
+
+    tarjan_(graph.startNode, -1);
+}
+
+void Tarjan::tarjan_(int u, int from)
+{
+    timestamp++;
+    dfn[u] = timestamp;
+    low[u] = timestamp;
     
+    stk.push(u);
+    for(int e:g[u])
+    {
+        int v=edges[e].v;
+        if(!dfn[v])
+        {
+            tarjan_(v,e);
+            low[u]=min(low[u],low[v]);
+            
+            if(dfn[u]<low[v])
+            {
+                is_bridge[e]=1;
+                is_bridge[e^1]=1;
+            }
+        }
+        else if(e!=(from^1))
+            low[u]=min(low[u],dfn[v]);
+    }
+    if(dfn[u]==low[u])
+    {
+        dcc_cnt++;
+        while(true)
+        {
+            int t=stk.top();
+            stk.pop();
+            id[t]=dcc_cnt-1;
+            if(t==u)
+                break;
+        }
+    }
+}
+
+void State::calculate_3(Graph& graph) {
+    Tarjan T;
+    // graph.print();
+    T.tarjan(*this, graph);
+    // for(int i = 0; i < T.is_bridge.size(); i++) {
+    //     if(T.is_bridge[i]) {
+    //         cout<<T.edges[i].u<<" "<<T.edges[i].v<<endl;
+    //     }
+    // }
+    
+    vector<vector<int>> tr(T.dcc_cnt);
+    for(auto e : T.edges) {
+        if(T.id[e.u] != T.id[e.v]) {
+            tr[T.id[e.u]].push_back(T.id[e.v]);
+            tr[T.id[e.v]].push_back(T.id[e.u]);
+        }
+    }
+
+    vector<int> dcc_cost(T.dcc_cnt, 0), dcc_size(T.dcc_cnt, 0), startNodes;
+
+    function<void(int, int)> dfs0 = [&] (int u, int fa) {
+        startNodes.push_back(u);
+        vector<bool> vis(graph.nodeCount, 0);
+        vector<int> nxt;
+        function<void(int)> dfs1 = [&] (int w) {
+            vis[w] = 1;
+            dcc_size[T.id[w]]++;
+            for(auto v : graph.g[w]) {
+                if(!vis[v]) {
+                    if(T.id[w] != T.id[v]) {
+                        nxt.push_back(v);
+                    } else {
+                        dfs1(v);
+                    }
+                }
+            }
+        };
+        dfs1(u);
+        for(auto v : nxt) {
+            if(v != fa) {
+                dfs0(v, u);
+            }
+        }
+    };
+
+    dfs0(graph.startNode, 0);
+
+    function<void(int)> calculate = [&] (int u) {
+        vector<bool> visited = isFilled;
+        visited[u] = 1;
+        vector<unsigned> current, next;
+        int sz = dcc_size[T.id[u]], dcc_id = T.id[u];
+
+        vector<color_t> colorCounts(sz, 0);
+        for (unsigned index = 0; index < isFilled.size(); ++index) {
+            if(T.id[index] == dcc_id) {
+                if (isFilled[index]) {
+                    current.push_back(index);
+                } else {
+                    colorCounts[graph.nodeColor[index]]++;
+                }
+            }
+        }
+        vector<bool> exposedColors(graph.colorCount, 0);
+        unsigned minMovesLeft = 0;
+
+        while (!current.empty()) {
+            vector<bool> visitedBackUp = visited;
+            vector<unsigned> colorCountsBackUp = colorCounts;
+            int numExposedColors = 0;
+            bool canExposeColors = false;
+            
+            for (unsigned node : current) {
+                for (unsigned neighbor : graph.g[node]) {
+                    if(T.id[neighbor] == dcc_id) {
+                        if (!visitedBackUp[neighbor]) {
+                            visitedBackUp[neighbor] = true;
+                            if (--colorCountsBackUp[graph.nodeColor[neighbor]] == 0) {
+                                numExposedColors++;
+                                exposedColors[graph.nodeColor[neighbor]] = 1;
+                                canExposeColors = true;
+                            }
+                        }
+                    }
+                }
+            }
+            if (canExposeColors) {
+                minMovesLeft += numExposedColors;
+                next = current;
+                for (unsigned node : current) {
+                    for (unsigned neighbor : graph.g[node]) {
+                        if(T.id[neighbor] == dcc_id) {
+                            if (!visited[neighbor] && exposedColors[graph.nodeColor[neighbor]]) {
+                                colorCounts[graph.nodeColor[neighbor]]--;
+                                next.push_back(neighbor);
+                                visited[neighbor] = true;
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                for (unsigned node : current) {
+                    for (unsigned neighbor : graph.g[node]) {
+                        if(T.id[neighbor] == dcc_id) {
+                            if (!visited[neighbor]) {
+                                colorCounts[graph.nodeColor[neighbor]]--;
+                                next.push_back(neighbor);
+                                visited[neighbor] = true;
+                            }
+                        }
+                    }
+                }
+                if(next.empty()) {
+                    break;
+                }
+                minMovesLeft++;
+            }
+            fill(exposedColors.begin(), exposedColors.end(), 0);
+            swap(current, next);
+            next.clear();
+        }
+        dcc_cost[dcc_id] = minMovesLeft;
+    };
+
+    for(auto i : startNodes) {
+        calculate(i);
+    }
+
+    function<void(int, int)> dfs2 = [&] (int u, int fa) {
+        dcc_cost[u] += dcc_cost[fa] + 1;
+        for(int v : tr[u]) {
+            if(v != fa) {
+                dfs2(v, u);
+            }
+        }
+    };
+
+    dfs2(T.id[graph.startNode], 0);
+
+    heuristicValue = 0;
+    for(int e : dcc_cost) {
+        heuristicValue = max(heuristicValue, e);
+    }
 }
 
 tuple<vector<color_t>, int> solvebyBFS(int row, int col, vector<vector<int>> data, atomic<bool>& timeoutOccurred) {
@@ -270,32 +484,32 @@ tuple<vector<color_t>, int> solvebyAstar(int row, int col, vector<vector<int>> d
     priority_queue<State> q;
     buildgraph(row, col, data, graph);
     State state(graph);
-    state.calculate_2(graph);
-    q.push(state);
+    state.calculate_3(graph);
+    // q.push(state);
 
-    while(!q.empty()) {
-        if(timeoutOccurred.load()) {
-            break;
-        }
-        auto t = move(q.top());
-        q.pop();
-        if(t.isComplete()) {
-            cout<<"number of states: "<<vis.num<<endl;
-            return {t.moves, vis.num};
-        }
+    // while(!q.empty()) {
+    //     if(timeoutOccurred.load()) {
+    //         break;
+    //     }
+    //     auto t = move(q.top());
+    //     q.pop();
+    //     if(t.isComplete()) {
+    //         cout<<"number of states: "<<vis.num<<endl;
+    //         return {t.moves, vis.num};
+    //     }
 
-        for(int color = 1; color <= t.colorNumber; color++) {
-            State newState = t;
-            if(newState.flood(graph, color) ) {
-                int dst = vis.find(newState.isFilled);
-                if(dst == 0 || dst > newState.moves.size()) {
-                    vis.insert(newState.isFilled, newState.moves.size());
-                    newState.calculate_2(graph);
-                    q.push(move(newState));
-                }
-            }
-        }
-    }
+    //     for(int color = 1; color <= t.colorNumber; color++) {
+    //         State newState = t;
+    //         if(newState.flood(graph, color) ) {
+    //             int dst = vis.find(newState.isFilled);
+    //             if(dst == 0 || dst > newState.moves.size()) {
+    //                 vis.insert(newState.isFilled, newState.moves.size());
+    //                 newState.calculate_2(graph);
+    //                 q.push(move(newState));
+    //             }
+    //         }
+    //     }
+    // }
     return {};
 }
 
