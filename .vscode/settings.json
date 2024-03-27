@@ -22,6 +22,9 @@
         "string": "cpp",
         "map": "cpp",
         "stack": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "xstring": "cpp"
     }
 }

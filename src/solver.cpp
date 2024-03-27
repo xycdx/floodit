@@ -193,6 +193,7 @@ void State::calculate_2(Graph& graph) {
 		next.clear();
 	}
 	heuristicValue = minMovesLeft;
+    cout<<heuristicValue<<endl;
 }
 
 void State::calculate_1(Graph& graph) {
@@ -314,15 +315,15 @@ void State::calculate_3(Graph& graph) {
     for(auto e : T.edges) {
         if(T.id[e.u] != T.id[e.v]) {
             tr[T.id[e.u]].push_back(T.id[e.v]);
-            tr[T.id[e.v]].push_back(T.id[e.u]);
         }
     }
 
     vector<int> dcc_cost(T.dcc_cnt, 0), dcc_size(T.dcc_cnt, 0), startNodes;
-
+    vector<bool> dcc_vis(T.dcc_cnt, false);
+    vector<bool> vis(graph.nodeCount, 0);
     function<void(int, int)> dfs0 = [&] (int u, int fa) {
+        dcc_vis[T.id[u]] = true;
         startNodes.push_back(u);
-        vector<bool> vis(graph.nodeCount, 0);
         vector<int> nxt;
         function<void(int)> dfs1 = [&] (int w) {
             vis[w] = 1;
@@ -339,13 +340,13 @@ void State::calculate_3(Graph& graph) {
         };
         dfs1(u);
         for(auto v : nxt) {
-            if(v != fa) {
+            if(v != fa && !dcc_vis[T.id[v]]) {
                 dfs0(v, u);
             }
         }
     };
 
-    dfs0(graph.startNode, 0);
+    dfs0(graph.startNode, -1);
 
     function<void(int)> calculate = [&] (int u) {
         vector<bool> visited = isFilled;
@@ -354,9 +355,9 @@ void State::calculate_3(Graph& graph) {
         int sz = dcc_size[T.id[u]], dcc_id = T.id[u];
 
         vector<color_t> colorCounts(sz, 0);
-        for (unsigned index = 0; index < isFilled.size(); ++index) {
+        for (unsigned index = 0; index < visited.size(); ++index) {
             if(T.id[index] == dcc_id) {
-                if (isFilled[index]) {
+                if (visited[index]) {
                     current.push_back(index);
                 } else {
                     colorCounts[graph.nodeColor[index]]++;
@@ -430,7 +431,9 @@ void State::calculate_3(Graph& graph) {
     }
 
     function<void(int, int)> dfs2 = [&] (int u, int fa) {
-        dcc_cost[u] += dcc_cost[fa] + 1;
+        if(fa != -1) {
+            dcc_cost[u] += dcc_cost[fa] + 1;
+        }
         for(int v : tr[u]) {
             if(v != fa) {
                 dfs2(v, u);
@@ -438,12 +441,13 @@ void State::calculate_3(Graph& graph) {
         }
     };
 
-    dfs2(T.id[graph.startNode], 0);
+    dfs2(T.id[graph.startNode], -1);
 
     heuristicValue = 0;
     for(int e : dcc_cost) {
         heuristicValue = max(heuristicValue, e);
     }
+    cout<<heuristicValue<<endl;
 }
 
 tuple<vector<color_t>, int> solvebyBFS(int row, int col, vector<vector<int>> data, atomic<bool>& timeoutOccurred) {
@@ -485,31 +489,32 @@ tuple<vector<color_t>, int> solvebyAstar(int row, int col, vector<vector<int>> d
     buildgraph(row, col, data, graph);
     State state(graph);
     state.calculate_3(graph);
-    // q.push(state);
 
-    // while(!q.empty()) {
-    //     if(timeoutOccurred.load()) {
-    //         break;
-    //     }
-    //     auto t = move(q.top());
-    //     q.pop();
-    //     if(t.isComplete()) {
-    //         cout<<"number of states: "<<vis.num<<endl;
-    //         return {t.moves, vis.num};
-    //     }
+    q.push(state);
 
-    //     for(int color = 1; color <= t.colorNumber; color++) {
-    //         State newState = t;
-    //         if(newState.flood(graph, color) ) {
-    //             int dst = vis.find(newState.isFilled);
-    //             if(dst == 0 || dst > newState.moves.size()) {
-    //                 vis.insert(newState.isFilled, newState.moves.size());
-    //                 newState.calculate_2(graph);
-    //                 q.push(move(newState));
-    //             }
-    //         }
-    //     }
-    // }
+    while(!q.empty()) {
+        if(timeoutOccurred.load()) {
+            break;
+        }
+        auto t = move(q.top());
+        q.pop();
+        if(t.isComplete()) {
+            cout<<"number of states: "<<vis.num<<endl;
+            return {t.moves, vis.num};
+        }
+
+        for(int color = 1; color <= t.colorNumber; color++) {
+            State newState = t;
+            if(newState.flood(graph, color) ) {
+                int dst = vis.find(newState.isFilled);
+                if(dst == 0 || dst > newState.moves.size()) {
+                    vis.insert(newState.isFilled, newState.moves.size());
+                    newState.calculate_3(graph);
+                    q.push(move(newState));
+                }
+            }
+        }
+    }
     return {};
 }
 

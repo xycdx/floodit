@@ -166,8 +166,8 @@ void test_one_case(string testcase) {
     cout << "testcase: " << testcase << endl;
     ifstream file("../test/" + testcase);
     if (file.is_open()) {
-        int row, col, color;
-        file >> row >> col >> color;
+        int row, col;
+        file >> row >> col;
         vector<vector<int>> data(row, vector<int>(col, 0));
         for(int i = 0; i < row; i++) {
             for(int j = 0; j < col; j++) {
@@ -187,6 +187,6 @@ void test_one_case(string testcase) {
 
 
 int main() {
-    // test(0, 0); // run 99problems test
-
+    test_one_case("testcase_1");
+    
 }
