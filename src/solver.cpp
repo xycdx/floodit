@@ -228,6 +228,10 @@ void State::calculate_1(Graph& graph) {
 	heuristicValue = minMovesLeft;
 }
 
+void calculate_3(Graph& graph) {
+    
+}
+
 tuple<vector<color_t>, int> solvebyBFS(int row, int col, vector<vector<int>> data, atomic<bool>& timeoutOccurred) {
     Graph graph;
     map<vector<bool>, int> vis;

@@ -3,11 +3,14 @@
 #include <set>
 #include <unordered_set>
 #include <unordered_map>
-#include <graph.h>
 #include <unionfind.h>
 #include <functional>
 #include <atomic>
 #include <tuple>
+
+#include <graph.h>
+#include <tarjan.h>
+
 using namespace std;
 
 struct State {
@@ -24,6 +27,8 @@ struct State {
     void calculate_1(Graph& graph);
 
     void calculate_2(Graph& graph);
+
+    void calculate_3(Graph& graph);
 
     bool operator<(const State& b) const { return moves.size() + heuristicValue > b.moves.size() + b.heuristicValue; }
 
